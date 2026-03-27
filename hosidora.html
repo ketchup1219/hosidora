@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星ドラ復活プロジェクト</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 375px;
+            height: 667px;
+            position: relative;
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 10;
+        }
+        .active { display: block; }
+
+        /* --- タイトル画面 --- */
+        #title-screen {
+            background-image: url('title_bg.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 画像の中の「タッチスタート」の位置に重ねる透明なボタン */
+        .invisible-trigger {
+            position: absolute;
+            top: 52%; /* 画像の「タッチスタート」の高さに合わせて調整 */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0); /* 透明 */
+            border: none;
+            cursor: pointer;
+            outline: none;
+            -webkit-tap-highlight-color: rgba(255, 221, 0, 0.4); /* タップした時だけ少し光る */
+        }
+
+        /* --- ホーム画面 --- */
+        #home-screen {
+            background: linear-gradient(to bottom, #001a33, #000);
+            color: white;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        .dq-window {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: sans-serif;
+        }
+
+        .back-btn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: #ffcc00;
+            border: 2px solid #5d3a1a;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+
+    <div id="title-screen" class="screen active">
+        <button class="invisible-trigger" onclick="goTo('home-screen')"></button>
+    </div>
+
+    <div id="home-screen" class="screen">
+        <div class="dq-window">
+            <h2 style="color:#ffcc00;">冒険の準備</h2>
+            <p>星のドラゴンクエストの世界へ<br>おかえりなさい！</p>
+            <p>Lv.99 伝説の勇者</p>
+        </div>
+        <button class="back-btn" onclick="goTo('title-screen')">タイトルへ戻る</button>
+    </div>
+
+</div>
+
+<script>
+    function goTo(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        
+        // スタートした時にちょっとした音を鳴らす設定などもここに追加できます
+        if(screenId === 'home-screen') {
+            console.log("冒険開始！");
+        }
+    }
+</script>
+
+</body>
+</html>
