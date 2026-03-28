@@ -3,98 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星ドラ復活プロジェクト - 完成版</title>
+    <title>星ドラ復活プロジェクト</title>
     <style>
-        /* 基本レイアウト */
-        body { 
-            margin: 0; 
-            background-color: #000; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden; 
-            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-        }
-
-        #game-container { 
-            width: 375px; 
-            height: 667px; 
-            position: relative; 
-            background-color: #111; 
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
+        body { margin: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #game-container { width: 375px; height: 667px; position: relative; background-color: #000; }
         
-        /* 各画面の共通設定 */
         .screen { 
-            position: absolute; 
-            width: 100%; 
-            height: 100%; 
-            display: none; 
-            background-size: 100% 100%; 
-            background-repeat: no-repeat; 
-            background-position: center; 
+            position: absolute; width: 100%; height: 100%; display: none; 
+            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
         }
-
         .active { display: block; }
 
-        /* 透明な操作ボタン */
-        .trigger { 
-            position: absolute; 
-            background: transparent; 
-            border: none; 
-            cursor: pointer; 
-            z-index: 100; 
-            outline: none; 
-            -webkit-tap-highlight-color: transparent;
-        }
+        /* 背景画像の設定 */
+        #title-screen { background-image: url('title_bg.jpg'); }
+        #loading-screen { background-image: url('loading_bg.png'); }
+        #home-screen { background-image: url('home_bg.jpg'); }
+        #fukubiki-screen { background-image: url('fukubiki_top.jpg.png'); }
 
-        /* 各ボタンの配置（画像の位置に合わせて調整） */
+        /* 透明ボタン */
+        .trigger { position: absolute; background: transparent; border: none; cursor: pointer; z-index: 100; outline: none; }
         .title-start-btn { width: 240px; height: 100px; left: 50%; top: 55%; transform: translateX(-50%); }
         .home-fukubiki-btn { width: 70px; height: 90px; right: 78px; bottom: 0px; }
         .back-home-btn { width: 75px; height: 90px; left: 0px; bottom: 0px; }
+        
+        /* 11連ふくびきボタンの位置 */
         .draw-11-btn { width: 220px; height: 65px; left: 50%; bottom: 65px; transform: translateX(-50%); }
 
-        /* 演出用：画面フラッシュ */
-        #flash-effect {
-            position: absolute; width: 100%; height: 100%; background: white;
-            opacity: 0; pointer-events: none; z-index: 200;
+        /* 動画表示レイヤー */
+        #video-overlay {
+            position: absolute; width: 100%; height: 100%;
+            background: #000; display: none; z-index: 500;
         }
-        .flash-anim { animation: flash 0.5s ease-out; }
-        @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-        /* 演出用：宝箱 */
-        #treasure-chest {
-            position: absolute; width: 120px; height: 120px;
-            left: 50%; top: 40%; transform: translate(-50%, -50%) scale(0);
-            background: linear-gradient(135deg, #ffd700, #ff8c00);
-            border: 4px solid #5d4037; border-radius: 15px;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 50px; z-index: 210; box-shadow: 0 0 30px #ffea00;
-        }
-        .chest-anim { animation: chest-up 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes chest-up {
-            0% { transform: translate(-50%, -50%) scale(0) rotate(-20deg); }
-            100% { transform: translate(-50%, -50%) scale(1) rotate(0); }
-        }
-
-        /* ふくびき結果画面 */
-        #result-overlay {
-            position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 300; color: white; text-align: center;
-        }
-        .rarity-text { color: #ffea00; font-size: 28px; font-weight: bold; text-shadow: 0 0 10px #ff8c00; margin-bottom: 10px; }
-        .item-name { font-size: 22px; margin-bottom: 30px; }
-        .close-hint { font-size: 14px; opacity: 0.7; border: 1px solid white; padding: 5px 15px; border-radius: 20px; }
+        #gacha-video { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="flash-effect"></div>
-    
+    <div id="video-overlay">
+        <video id="gacha-video" src="hosidoragatya1.mp4" playsinline></video>
+    </div>
+
     <div id="title-screen" class="screen active">
         <button class="trigger title-start-btn" onclick="startLoading()"></button>
     </div>
@@ -104,83 +53,45 @@
     <div id="home-screen" class="screen">
         <button class="trigger home-fukubiki-btn" onclick="goTo('fukubiki-screen')"></button>
     </div>
-    
+
     <div id="fukubiki-screen" class="screen">
-        <button class="trigger draw-11-btn" onclick="playFukubiki()"></button>
+        <button class="trigger draw-11-btn" onclick="playGachaVideo()"></button>
         <button class="trigger back-home-btn" onclick="goTo('home-screen')"></button>
-    </div>
-
-    <div id="treasure-chest" style="display:none;">🎁</div>
-
-    <div id="result-overlay" onclick="closeResult()">
-        <div class="rarity-text">超ギガレア！！</div>
-        <div class="item-name">★5 不死鳥の杖</div>
-        <div class="close-hint">タップして閉じる</div>
     </div>
 </div>
 
 <script>
-    /**
-     * 画像読み込み管理
-     * 複数のファイル名候補を試し、存在するものを背景にセットします
-     */
-    function smartLoadBg(id, names) {
-        const el = document.getElementById(id);
-        names.forEach(name => {
-            const img = new Image();
-            img.src = name;
-            img.onload = () => { el.style.backgroundImage = `url('${name}')`; };
-        });
-    }
+    const videoOverlay = document.getElementById('video-overlay');
+    const gachaVideo = document.getElementById('gacha-video');
 
-    // 画像の自動割り当て
-    smartLoadBg('title-screen', ['title_bg.jpg']);
-    smartLoadBg('loading-screen', ['loading_bg.png', 'loading_bg.png.png']);
-    smartLoadBg('home-screen', ['home_bg.jpg']);
-    smartLoadBg('fukubiki-screen', ['fukubiki_top.jpg.png', 'fukubiki_top.jpg']);
-
-    /**
-     * 画面遷移システム
-     */
     function goTo(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(screenId);
-        if(target) target.classList.add('active');
-        document.getElementById('result-overlay').style.display = 'none';
-        document.getElementById('treasure-chest').style.display = 'none';
+        document.getElementById(screenId).classList.add('active');
+        // 動画を止めて隠す
+        videoOverlay.style.display = 'none';
+        gachaVideo.pause();
+        gachaVideo.currentTime = 0;
     }
 
-    // タイトルからホームへの遷移（ロード挟み）
     function startLoading() {
         goTo('loading-screen');
-        setTimeout(() => { goTo('home-screen'); }, 1200);
+        setTimeout(() => { goTo('home-screen'); }, 1000);
     }
 
-    /**
-     * ふくびき演出システム
-     */
-    function playFukubiki() {
-        // 1. 画面フラッシュ
-        const flash = document.getElementById('flash-effect');
-        flash.classList.remove('flash-anim');
-        void flash.offsetWidth; // アニメーションリセット
-        flash.classList.add('flash-anim');
+    function playGachaVideo() {
+        videoOverlay.style.display = 'block';
+        gachaVideo.play();
 
-        // 2. 宝箱出現
-        const chest = document.getElementById('treasure-chest');
-        chest.style.display = 'flex';
-        chest.classList.add('chest-anim');
+        // 動画が終わったら自動的にふくびき画面に戻る
+        gachaVideo.onended = function() {
+            videoOverlay.style.display = 'none';
+        };
 
-        // 3. 一定時間後に結果表示
-        setTimeout(() => {
-            chest.style.display = 'none';
-            chest.classList.remove('chest-anim');
-            document.getElementById('result-overlay').style.display = 'flex';
-        }, 1200);
-    }
-
-    function closeResult() {
-        document.getElementById('result-overlay').style.display = 'none';
+        // 画面をタップしても戻れるようにする場合
+        videoOverlay.onclick = function() {
+            videoOverlay.style.display = 'none';
+            gachaVideo.pause();
+        };
     }
 </script>
 
