@@ -3,97 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星ドラ復活プロジェクト</title>
+    <title>星ドラ・マルチ完全版</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
+
     <style>
-        body { margin: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #game-container { width: 375px; height: 667px; position: relative; background-color: #000; }
-        
-        .screen { 
-            position: absolute; width: 100%; height: 100%; display: none; 
-            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
-        }
+        :root { --hp-color: linear-gradient(to right, #ff00ea, #7000ff); --ct-color: rgba(255, 230, 0, 0.4); --gold: #ffcc00; }
+        body { margin: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; user-select: none; color: white; touch-action: none; }
+        #game-container { width: 375px; height: 667px; position: relative; background: #000; overflow: hidden; border: 1px solid #333; }
+        .screen { position: absolute; width: 100%; height: 100%; display: none; background-size: 100% 100%; background-repeat: no-repeat; }
         .active { display: block; }
 
-        /* 背景画像の設定 */
+        /* 背景画像設定 */
         #title-screen { background-image: url('title_bg.jpg'); }
-        #loading-screen { background-image: url('loading_bg.png'); }
+        #loading-screen { background-image: url('loading_bg.png.png'); }
         #home-screen { background-image: url('home_bg.jpg'); }
-        #fukubiki-screen { background-image: url('fukubiki_top.jpg.png'); }
+        #fukubiki-screen { background-image: url('fukubiki_top.jpg.jpg'); }
+        #equip-screen { background: #1a1a1a; flex-direction: column; display: none; }
+        #equip-screen.active { display: flex; }
 
-        /* 透明ボタン */
-        .trigger { position: absolute; background: transparent; border: none; cursor: pointer; z-index: 100; outline: none; }
-        .title-start-btn { width: 240px; height: 100px; left: 50%; top: 55%; transform: translateX(-50%); }
-        .home-fukubiki-btn { width: 70px; height: 90px; right: 78px; bottom: 0px; }
-        .back-home-btn { width: 75px; height: 90px; left: 0px; bottom: 0px; }
-        
-        /* 11連ふくびきボタンの位置 */
-        .draw-11-btn { width: 220px; height: 65px; left: 50%; bottom: 65px; transform: translateX(-50%); }
+        /* 装備画面UI */
+        .tab-bar { display: flex; overflow-x: auto; background: #333; padding: 5px; gap: 5px; border-bottom: 1px solid var(--gold); }
+        .tab { padding: 8px 12px; background: #444; border-radius: 5px; font-size: 11px; white-space: nowrap; cursor: pointer; }
+        .tab.active { background: var(--gold); color: black; font-weight: bold; }
+        .weapon-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .w-item { background: #2a2a2a; border: 1px solid #444; border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .w-item.selected { border-color: #00ffcc; background: #00332a; }
+        .w-name { font-size: 12px; font-weight: bold; }
+        .w-skill { font-size: 9px; color: #00ffcc; }
+        .w-score { color: var(--gold); font-weight: bold; font-size: 13px; }
 
-        /* 動画表示レイヤー */
-        #video-overlay {
-            position: absolute; width: 100%; height: 100%;
-            background: #000; display: none; z-index: 500;
-        }
-        #gacha-video { width: 100%; height: 100%; object-fit: contain; }
+        /* バトル UI */
+        .boss-hp-outer { width: 80%; height: 12px; background: #222; margin: 45px auto 5px; border: 1px solid gold; border-radius: 10px; overflow: hidden; }
+        #boss-hp-inner { width: 100%; height: 100%; background: var(--hp-color); transition: width 0.3s; }
+        .battle-footer { position: absolute; bottom: 0; width: 100%; height: 260px; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 25px; background: linear-gradient(to top, black 60%, transparent); }
+        .skill-item-battle { width: 90px; height: 90px; background: #222; border: 3px solid #555; border-radius: 50%; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 11px; text-align: center; cursor: pointer; }
+        .skill-item-battle.ready { border-color: yellow; box-shadow: 0 0 15px yellow; }
+        .ct-fill { position: absolute; bottom: 0; width: 100%; background: var(--ct-color); height: 0%; pointer-events: none; }
+
+        .trigger { position: absolute; background: transparent; border: none; cursor: pointer; z-index: 100; }
+        #video-overlay { position: absolute; width: 100%; height: 100%; background: #000; display: none; z-index: 1000; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="video-overlay">
-        <video id="gacha-video" src="hosidoragatya1.mp4" playsinline></video>
-    </div>
+    <div id="combo-txt" style="position: absolute; top: 150px; right: 20px; font-size: 30px; color: gold; font-weight: bold; opacity: 0; z-index: 200;">COMBO!</div>
 
-    <div id="title-screen" class="screen active">
-        <button class="trigger title-start-btn" onclick="startLoading()"></button>
-    </div>
-
+    <div id="title-screen" class="screen active" onclick="startLoading()"></div>
     <div id="loading-screen" class="screen"></div>
 
     <div id="home-screen" class="screen">
-        <button class="trigger home-fukubiki-btn" onclick="goTo('fukubiki-screen')"></button>
+        <button class="trigger" style="width:115px; height:45px; bottom:218px; left:130px;" onclick="goTo('equip-screen')"></button>
+        <button class="trigger" style="width:50px; height:50px; bottom:15px; left:162px;" onclick="joinLobby()"></button>
+        <button class="trigger" style="width:60px; height:70px; right:65px; bottom:15px;" onclick="goTo('fukubiki-screen')"></button>
+    </div>
+
+    <div id="equip-screen" class="screen">
+        <div style="padding:10px; text-align:center; color:gold; font-weight:bold;">そうび変更</div>
+        <div class="tab-bar" id="category-tabs"></div>
+        <div class="weapon-list" id="weapon-list-container"></div>
+        <button onclick="goTo('home-screen')" style="width:100%; padding:15px; background:gold; border:none; font-weight:bold; font-size:16px;">決定</button>
+    </div>
+
+    <div id="lobby-screen" class="screen">
+        <div style="padding:20px; text-align:center;">
+            <h3 style="color:gold;">パーティ結成</h3>
+            <div id="member-list" style="background:rgba(0,0,0,0.3); border-radius:10px; margin:10px 0; padding:10px; height:150px; overflow-y:auto; border:1px solid #444;"></div>
+            <button id="ready-btn" style="width:220px; padding:12px; border-radius:30px; background:#444; color:white; font-weight:bold; border:1px solid #777;" onclick="toggleReady()">準備OK！</button>
+        </div>
+    </div>
+
+    <div id="battle-screen" class="screen">
+        <div class="boss-hp-outer"><div id="boss-hp-inner"></div></div>
+        <div style="text-align:center; color:gold; font-weight:bold;">大魔王ゾーマ</div>
+        <div class="battle-footer">
+            <div id="skill-main" class="skill-item-battle" onclick="executeSkill()">
+                <div class="ct-fill" id="ct-bar"></div>
+                <div id="skill-name" style="z-index:2; padding:5px;"></div>
+            </div>
+        </div>
     </div>
 
     <div id="fukubiki-screen" class="screen">
-        <button class="trigger draw-11-btn" onclick="playGachaVideo()"></button>
-        <button class="trigger back-home-btn" onclick="goTo('home-screen')"></button>
+        <button class="trigger" style="width:180px; height:55px; right:10px; bottom:155px;" onclick="playGacha()"></button>
+        <button class="trigger" style="width:60px; height:70px; left:5px; bottom:5px;" onclick="goTo('home-screen')"></button>
     </div>
+
+    <div id="video-overlay"><video id="gacha-video" src="hosidoragatya1.mp4" style="width:100%; height:100%;" playsinline></video></div>
 </div>
 
 <script>
-    const videoOverlay = document.getElementById('video-overlay');
-    const gachaVideo = document.getElementById('gacha-video');
+    // Firebase初期設定（hosidora.htmlの設定を維持）
+    const firebaseConfig = {
+        apiKey: "AIzaSyA9igMwWxU5GniNK9b7od0K1Y8h3jOqI30",
+        authDomain: "hosidora.firebaseapp.com",
+        projectId: "hosidora",
+        databaseURL: "https://hosidora-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const myId = "Hero_" + Math.random().toString(36).substring(7);
 
-    function goTo(screenId) {
+    // 【全武器データ：12カテゴリーすべて収録】
+    const weaponMaster = {
+        "剣": [
+            {n:"勇者の剣(超覚醒)", s:"剣神無双斬", sc:"10.0", sp:4.5}, {n:"はじまりの勇者の剣", s:"闇を断つ者", sc:"9.0", sp:4.2},
+            {n:"友沢亮の剣", s:"旋風打", sc:"9.0", sp:4.1}, {n:"アニメ版ダイの剣", s:"師伝アバンストラッシュ", sc:"9.0", sp:4.0},
+            {n:"不死鳥の剣", s:"閃煌斬", sc:"8.0", sp:4.0}, {n:"ロトの剣(超覚醒)", s:"超ギガスラッシュ", sc:"8.0", sp:3.8},
+            {n:"天空の剣(超覚醒)", s:"超ギガクロス", sc:"8.0", sp:3.8}, {n:"メタルキングの剣", s:"キングブレイド", sc:"8.0", sp:3.5},
+            {n:"勇者の剣+", s:"ギガクラッシュ", sc:"7.5", sp:3.5}, {n:"王家のレイピア", s:"ブレイブソード", sc:"7.0", sp:3.2},
+            {n:"きせきのつるぎ", s:"マーベラスソード", sc:"6.0", sp:3.0}, {n:"はぐメタの剣", s:"超彗星斬り", sc:"6.0", sp:3.2},
+            {n:"ロトの剣", s:"ギガスラッシュ", sc:"4.5", sp:2.8}, {n:"アバンの剣", s:"アバンストラッシュ", sc:"3.0", sp:2.0}
+        ],
+        "短剣": [
+            {n:"創造神の刃", s:"創生の裂刃", sc:"10.0", sp:5.0}, {n:"万世の大樹の短剣", s:"神樹の胎動", sc:"9.5", sp:4.8},
+            {n:"ルビスの短剣★", s:"ルビスの結界", sc:"8.0", sp:4.5}, {n:"メタルキングダガー", s:"キングエッジ", sc:"7.5", sp:4.2}
+        ],
+        "杖": [
+            {n:"赫星の灼杖", s:"獄炎ギャラクシー", sc:"9.0", sp:3.8}, {n:"ゼニスの王笏", s:"バーストレイ", sc:"9.0", sp:4.0},
+            {n:"竜神の杖★", s:"ジゴフラッシュ", sc:"8.0", sp:3.5}, {n:"大魔道士の杖", s:"ウラノスの大秘法", sc:"8.0", sp:3.6}
+        ],
+        "槍": [
+            {n:"翠星の双槍", s:"スターゲイザー", sc:"10.0", sp:4.3}, {n:"神鳥の槍", s:"神鳥の裁き", sc:"10.0", sp:4.2},
+            {n:"ゼニスの王槍", s:"ゼニスの天槍", sc:"8.0", sp:4.0}
+        ],
+        "斧": [
+            {n:"星神の煌斧", s:"轟雷斬", sc:"10.0", sp:3.2}, {n:"破天の麗斧", s:"カオスフレイム", sc:"8.0", sp:3.5}
+        ],
+        "爪": [
+            {n:"耀光の宝爪", s:"裂燦爪", sc:"9.0", sp:4.8}, {n:"不死鳥の闘拳", s:"疾風闘拳", sc:"9.0", sp:5.0}
+        ],
+        "棍": [
+            {n:"ゼニスの王棍", s:"ゼニスの神秘", sc:"10.0", sp:3.8}, {n:"ドラゴンの王棍", s:"逆鱗破", sc:"8.0", sp:3.5}
+        ],
+        "鞭": [
+            {n:"不死鳥の闘鞭", s:"鳳仙火", sc:"9.5", sp:4.2}, {n:"はじまりの勇者の鞭", s:"闇を払う者", sc:"9.0", sp:4.5}
+        ],
+        "扇": [
+            {n:"神鳥の扇", s:"神鳥の福音", sc:"10.0", sp:5.0}, {n:"ロザリーファン", s:"エルフの共鳴", sc:"10.0", sp:4.8},
+            {n:"ルビスの扇+", s:"こだまする光撃", sc:"7.0", sp:4.2}
+        ],
+        "ハンマー": [
+            {n:"極光のハンマー", s:"灰塵撃", sc:"9.0", sp:3.0}, {n:"メタルキングのハンマー", s:"キングクラッシュ", sc:"8.0", sp:3.2}
+        ],
+        "ブーメラン": [
+            {n:"不死鳥の翼刃", s:"不死鳥化", sc:"10.0", sp:4.5}, {n:"冥暗の環", s:"忌哭衝", sc:"9.0", sp:4.3}
+        ],
+        "弓": [
+            {n:"星神の煌砲", s:"雷煌弾", sc:"9.5", sp:3.8}, {n:"猪狩守のグローブ", s:"カイザーライジング", sc:"9.0", sp:4.0},
+            {n:"蒼星の弓", s:"星巡りの流矢", sc:"7.0", sp:3.5}, {n:"さとりの弓", s:"ファイアショット", sc:"3.0", sp:2.5},
+            {n:"モガマルウォーターガン", s:"水鉄砲", sc:"4.0", sp:2.8}
+        ]
+    };
+
+    let currentCat = "剣", myEquip = weaponMaster["剣"][0], isReady = false, inBattle = false, ctValue = 0;
+
+    function goTo(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-        // 動画を止めて隠す
-        videoOverlay.style.display = 'none';
-        gachaVideo.pause();
-        gachaVideo.currentTime = 0;
+        document.getElementById(id).classList.add('active');
+        if(id === 'equip-screen') renderEquip();
+        inBattle = (id === 'battle-screen');
     }
 
-    function startLoading() {
-        goTo('loading-screen');
-        setTimeout(() => { goTo('home-screen'); }, 1000);
+    function startLoading() { goTo('loading-screen'); setTimeout(() => goTo('home-screen'), 1000); }
+
+    function renderEquip() {
+        const tabs = document.getElementById('category-tabs');
+        tabs.innerHTML = Object.keys(weaponMaster).map(cat => `<div class="tab ${currentCat===cat?'active':''}" onclick="currentCat='${cat}';renderEquip()">${cat}</div>`).join('');
+        const list = document.getElementById('weapon-list-container');
+        list.innerHTML = weaponMaster[currentCat].map(w => `
+            <div class="w-item ${myEquip.n===w.n?'selected':''}" onclick="selectWeapon('${w.n}')">
+                <div><div class="w-name">${w.n}</div><div class="w-skill">スキル: ${w.s}</div></div><div class="w-score">${w.sc}</div>
+            </div>
+        `).join('');
     }
 
-    function playGachaVideo() {
-        videoOverlay.style.display = 'block';
-        gachaVideo.play();
+    function selectWeapon(name) {
+        myEquip = weaponMaster[currentCat].find(w => w.n === name);
+        renderEquip();
+    }
 
-        // 動画が終わったら自動的にふくびき画面に戻る
-        gachaVideo.onended = function() {
-            videoOverlay.style.display = 'none';
-        };
+    function joinLobby() {
+        goTo('lobby-screen');
+        const myRef = db.ref('multi/room/members/' + myId);
+        myRef.set({ name: "冒険者", weapon: myEquip.n, ready: false });
+        myRef.onDisconnect().remove();
 
-        // 画面をタップしても戻れるようにする場合
-        videoOverlay.onclick = function() {
-            videoOverlay.style.display = 'none';
-            gachaVideo.pause();
-        };
+        db.ref('multi/room/members').on('value', snap => {
+            const list = document.getElementById('member-list'); list.innerHTML = "";
+            let rCount = 0, tCount = 0;
+            snap.forEach(c => {
+                tCount++; if(c.val().ready) rCount++;
+                list.innerHTML += `<div style="padding:5px; border-bottom:1px solid #333;">${c.val().weapon} : ${c.val().ready?'OK':'待機中'}</div>`;
+            });
+            if(rCount === tCount && tCount > 0) startBattle();
+        });
+    }
+
+    function toggleReady() {
+        isReady = !isReady;
+        document.getElementById('ready-btn').style.background = isReady ? "#00ff00" : "#444";
+        db.ref('multi/room/members/' + myId).update({ ready: isReady });
+    }
+
+    function startBattle() {
+        if(inBattle) return;
+        goTo('battle-screen');
+        document.getElementById('skill-name').innerText = myEquip.s;
+        ctValue = 0;
+        const loop = setInterval(() => {
+            if(!inBattle) { clearInterval(loop); return; }
+            if(ctValue < 100) {
+                ctValue += myEquip.sp * 0.15;
+                document.getElementById('ct-bar').style.height = Math.min(ctValue, 100) + "%";
+                if(ctValue >= 100) document.getElementById('skill-main').classList.add('ready');
+            }
+        }, 100);
+    }
+
+    function executeSkill() {
+        if(ctValue < 100) return;
+        ctValue = 0; document.getElementById('skill-main').classList.remove('ready');
+        db.ref('multi/room/boss/currentHp').transaction(h => (h || 30000) - 2000);
+        const combo = document.getElementById('combo-txt'); combo.style.opacity = 1; setTimeout(() => combo.style.opacity = 0, 800);
+    }
+
+    function playGacha() {
+        const v = document.getElementById('gacha-video');
+        document.getElementById('video-overlay').style.display='block';
+        v.play();
+        v.onended = () => { document.getElementById('video-overlay').style.display='none'; alert("新装備獲得！"); };
     }
 </script>
-
 </body>
 </html>
